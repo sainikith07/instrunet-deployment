@@ -3,15 +3,14 @@ import numpy as np
 import librosa
 import librosa.display
 import soundfile as sf
-import matplotlib.pyplot as plt
 from tflite_runtime.interpreter import Interpreter
+import matplotlib.pyplot as plt
 import json
 from fpdf import FPDF
 from datetime import datetime
 
 st.set_page_config(page_title="InstruNet", page_icon="🎶", layout="wide")
 
-# Load TFLite Model
 interpreter = Interpreter(model_path="instruNet_model.tflite")
 interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
@@ -19,8 +18,8 @@ output_details = interpreter.get_output_details()
 
 label_map = ["flute", "trumpet", "violin"]
 
-def predict_instrument(audio_file):
-    audio, sr = sf.read(audio_file)
+def predict_instrument(file):
+    audio, sr = sf.read(file)
     if len(audio.shape) > 1:
         audio = np.mean(audio, axis=1)
 
@@ -38,68 +37,60 @@ def predict_instrument(audio_file):
 
     return output, audio, 22050
 
-uploaded = st.file_uploader("Upload a WAV file", type=["wav"])
+uploaded = st.file_uploader("Upload WAV file", type=["wav"])
 if uploaded:
     st.audio(uploaded, format="audio/wav")
-    
-    if st.button("Analyze Track"):
+
+    if st.button("Analyze"):
         conf, audio, sr = predict_instrument(uploaded)
         idx = np.argmax(conf)
-        pred_label = label_map[idx]
+        pred = label_map[idx]
 
-        st.success(f"Predicted Instrument: **{pred_label.upper()}**")
+        st.success(f"Detected Instrument: **{pred.upper()}**")
 
-        # Confidence bars
-        st.subheader("Confidence Scores")
+        st.subheader("Confidence Levels")
         for i, lbl in enumerate(label_map):
-            st.write(f"{lbl}: {conf[i]*100:.2f}%")
+            st.write(f"{lbl}: {conf[i]*100:.1f}%")
             st.progress(float(conf[i]))
 
-        # Waveform
         st.subheader("Waveform")
         fig, ax = plt.subplots(figsize=(6,3))
         librosa.display.waveshow(audio, sr=sr, ax=ax)
         st.pyplot(fig)
 
-        # Spectrogram
-        st.subheader("Mel-Spectrogram")
+        st.subheader("Spectrogram")
         fig2, ax2 = plt.subplots(figsize=(6,3))
-        mel = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=128)
+        mel = librosa.feature.melspectrogram(y=audio, sr=sr)
         mel_db = librosa.power_to_db(mel, ref=np.max)
-        librosa.display.specshow(mel_db, sr=sr, ax=ax2, cmap="magma")
+        librosa.display.specshow(mel_db, sr=sr, cmap="magma", ax=ax2)
         st.pyplot(fig2)
 
-        # Fake timeline (for visualization)
-        st.subheader("Timeline Visualization")
-        fig3, ax3 = plt.subplots(figsize=(10,2))
-        line = np.sin(np.linspace(0,3*np.pi,150)) * conf[idx] + conf[idx]
-        ax3.plot(line, color='cyan')
+        line = np.sin(np.linspace(0,3*np.pi,200)) * conf[idx] + conf[idx]
+        st.subheader("Timeline (Mock Visualization)")
+        fig3, ax3 = plt.subplots(figsize=(8,2))
+        ax3.plot(line, color="cyan")
         ax3.set_yticks([])
         st.pyplot(fig3)
 
-        # JSON export
         report = {
             "file": uploaded.name,
-            "prediction": pred_label,
-            "confidence_scores": {label_map[i]: float(conf[i]) for i in range(len(label_map))}
+            "prediction": pred,
+            "confidence_scores": {label_map[i]: float(conf[i]) for i in range(len(label_map))},
+            "timestamp": str(datetime.now())
         }
 
         st.download_button("📁 Download JSON", json.dumps(report, indent=4), file_name="report.json")
 
-        # PDF export
-        def export_pdf(filename):
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=14)
-            pdf.cell(200,10,txt="Instrument Recognition Report",ln=True,align='C')
-            pdf.set_font("Arial", size=12)
-            pdf.ln(5)
-            pdf.cell(200,10,txt=f"Prediction: {pred_label}",ln=True)
-            pdf.cell(200,10,txt="Confidence Scores:",ln=True)
-            for i, lbl in enumerate(label_map):
-                pdf.cell(200,10,txt=f"{lbl}: {conf[i]*100:.2f}%",ln=True)
-            pdf.output(filename)
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=14)
+        pdf.cell(200,10,txt="Instrument Recognition Report",ln=True,align='C')
+        pdf.set_font("Arial", size=12)
+        pdf.ln(5)
+        pdf.cell(200,10,txt=f"Prediction: {pred}",ln=True)
+        for i,l in enumerate(label_map):
+            pdf.cell(200,10,txt=f"{l}: {conf[i]*100:.1f}%",ln=True)
+        pdf.output("report.pdf")
 
-        export_pdf("report.pdf")
         with open("report.pdf","rb") as f:
             st.download_button("📄 Download PDF", data=f, file_name="report.pdf", mime="application/pdf")
