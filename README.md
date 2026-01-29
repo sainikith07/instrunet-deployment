@@ -1,106 +1,83 @@
-🎶 InstruNet — AI-Powered Musical Instrument Recognition
+# 🎶 InstruNet — AI-Powered Musical Instrument Recognition
 
-InstruNet is a deployable AI system that identifies musical instruments from .wav audio using Mel-Spectrograms + CNN + TensorFlow Lite, served through a modern Streamlit dashboard.
-
-📛 Project Badges
+InstruNet is a deployable AI system that identifies musical instruments from `.wav` audio files using **Mel-Spectrograms + CNN + TensorFlow Lite**, served through a modern **Streamlit dashboard**.
 
 
 
+## 🎯 Project Summary
+
+| Property | Value |
+|--------|------|
+| Problem | Musical Instrument Classification from Audio |
+| Input | `.wav` audio file |
+| Output | Instrument Label + Confidence Scores |
+| Supported Instruments | Flute, Trumpet, Violin |
+| Model | CNN |
+| Deployment Format | TensorFlow Lite (`.tflite`) |
+| UI | Streamlit |
+| Reports | JSON + PDF |
+| GPU Required | ❌ No |
+| Real-Time Capable | ✅ Yes |
+
+---
+
+## ✨ Key Features
+
+- 🎧 Upload and analyze `.wav` audio files  
+- 📈 Visualize waveform and Mel-spectrogram  
+- ⚡ Run inference using CPU-friendly **TensorFlow Lite**  
+- 📊 Display confidence score bars  
+- ⏱️ Timeline activation visualization  
+- 📄 Export prediction reports (JSON & PDF)  
+- ☁️ Works on Streamlit Cloud and local machines  
+- 🪶 Lightweight with no GPU dependency  
 
 
 
 
+---
 
+## 🧩 Model Card
 
+| Field | Details |
+|-----|--------|
+| Model Name | InstruNet-CNN |
+| Input | 128×128 Log-Mel Spectrogram |
+| Output Classes | Flute, Trumpet, Violin |
+| Data Type | float32 |
+| Training Framework | TensorFlow |
+| Inference Runtime | TensorFlow Lite |
+| Optimizer | Adam |
+| Loss Function | Sparse Categorical Crossentropy |
+| Export Format | `.tflite` |
+| Hardware | CPU (No GPU Required) |
 
+---
 
+## 🎧 Supported Instruments
 
-🏷 Banner Placeholder
+- 🎼 Flute  
+- 🎺 Trumpet  
+- 🎻 Violin  
 
-Add this image later:
+---
 
-assets/banner.png
+## 🎨 Streamlit Dashboard Features
 
-🎯 Summary
-Property	Value
-Problem	Instrument Classification from Audio
-Input	.wav file
-Output	Instrument Label + Confidence Scores
-Instruments	Flute, Trumpet, Violin
-Model	CNN
-Deployment Format	.tflite
-UI	Streamlit
-Reports	JSON + PDF
-GPU Required	No
-Real-Time Capable	Yes
-✨ Key Features
+- 🔴 Real-time inference  
+- ▶️ Audio playback  
+- 📉 Waveform visualization  
+- 🌈 Mel-spectrogram visualization  
+- 📊 Confidence percentage bars  
+- ⏱️ Timeline activation plot  
+- 📤 JSON export  
+- 📄 PDF export  
 
-Upload and analyze .wav audio
+---
 
-Visualize waveform and Mel-spectrogram
+## 📊 Example JSON Output
 
-Run inference using TFLite (CPU-friendly)
-
-Display confidence score bars
-
-Show timeline activation visualization
-
-Export JSON and PDF reports
-
-Works on Streamlit Cloud / Local
-
-Lightweight with no GPU dependency
-
-🧠 System Architecture
-.wav File
-    ↓
-Audio Preprocessing (Resample, Trim, Pad)
-    ↓
-Mel-Spectrogram (128×128 Log-Mel)
-    ↓
-CNN Classifier (Softmax via TFLite)
-    ↓
-Streamlit Dashboard (Waveform, Spectrogram, Confidence, Timeline, Export)
-
-🧩 Model Card
-Field	Details
-Model Name	InstruNet-CNN
-Input	128×128 Log-Mel Spectrogram
-Output Classes	Flute, Trumpet, Violin
-Datatype	float32
-Training Framework	TensorFlow
-Inference Runtime	TensorFlow Lite
-Optimizer	Adam
-Loss	Sparse Categorical Crossentropy
-Export Format	.tflite
-Hardware	CPU (No GPU Required)
-🎧 Supported Instruments
-
-🎼 Flute
-
-🎺 Trumpet
-
-🎻 Violin
-
-🎨 Dashboard Features
-
-Real-time inference
-
-Audio playback
-
-Waveform visualization
-
-Mel-Spectrogram visualization
-
-Confidence percentage bars
-
-Mock timeline activation plot
-
-JSON export
-
-PDF export
-
-📊 Example JSON Output
+```json
 {
   "file": "sample.wav",
   "prediction": "flute",
@@ -111,44 +88,27 @@ PDF export
   },
   "timestamp": "2026-01-18 12:31:44"
 }
-
-📁 Repository Structure
-instrunet-deployment/
-│
-├── app.py                 # Streamlit Web App
-├── instruNet_model.tflite # TFLite Model for Inference
-├── requirements.txt       # Python Dependencies
-├── .runtime.txt           # Python Version Pinning (3.10)
-├── README.md              # Documentation (this file)
-└── assets/                # Screenshots/GIFs (optional)
-
-📦 Installation
-1. Clone Repo
+```
+---
+## 📦 Installation
+Clone Repository
 git clone https://github.com/sainikith07/instrunet-deployment.git
 cd instrunet-deployment
 
-2. Install Dependencies
+Install Dependencies
 pip install -r requirements.txt
 
-3. Run Web App
+Run Web App
 streamlit run app.py
 
 
-App will open at:
+App opens at:
 
 http://localhost:8501/
 
-🌐 Deployment Options
-Platform	Status
-Streamlit Cloud	Supported
-Local PC	Supported
-Google Colab (via Ngrok)	Supported
-HuggingFace Spaces	Planned
-Android (TFLite)	Planned
-iOS (TFLite)	Planned
-🔬 Research Motivation
+---
 
-This project sits at the intersection of:
+## This project combines:
 
 Music Information Retrieval (MIR)
 
@@ -160,55 +120,56 @@ Audio Classification
 
 Edge AI (TFLite Deployment)
 
-ML Explainability (Confidence Visualization)
+Model Explainability (Confidence Visualization)
 
-🏢 Business / Industry Use-Cases
+---
+## 🏢 Business & Industry Use-Cases
 
-EdTech: Interactive music learning
+EdTech & interactive music learning
 
-Audio Surveillance & Monitoring
+Audio surveillance and monitoring
 
-Mobile Music Recognition Apps
+Mobile music recognition apps
 
-Audio Production Tooling
+Audio production and DAW tooling
 
-DAW-aware audio tagging
-
-Meta-data generation for media assets
+Metadata generation for media assets
 
 Interactive music games and AR/VR
 
-🧭 Roadmap
 
- Real dataset training (IRMAS / NSynth)
+---
+## 🧭 Roadmap
 
- Multi-instrument polyphonic detection
+⬜ Real dataset training (IRMAS / NSynth)
 
- Segment-wise real timeline activation
+⬜ Multi-instrument polyphonic detection
 
- HuggingFace deployment
+⬜ Segment-wise real timeline activation
 
- Mobile app using TFLite
+⬜ HuggingFace deployment
 
- Jazz/Orchestra instruments expansion
+⬜ Mobile app using TFLite
+
+⬜ Orchestra and jazz instrument expansion
 
 🧾 Academic Citation (BibTeX)
 
-If you use this system in research:
 
-@software{instrunet2026,
-  author       = {Sai Nikith},
-  title        = {InstruNet: AI-based Musical Instrument Recognition System},
-  year         = {2026},
-  publisher    = {GitHub},
-  url          = {https://github.com/sainikith07/instrunet-deployment}
+---
+## @software{instrunet2026,
+  author    = {Sai Nikith},
+  title     = {InstruNet: AI-based Musical Instrument Recognition System},
+  year      = {2026},
+  publisher = {GitHub},
+  url       = {https://github.com/sainikith07/instrunet-deployment}
 }
 
-🤝 Contributing
+
+---
+## 🤝 Contributing
 
 Contributions are welcome!
-
-Steps:
 
 git checkout -b feature-name
 git commit -m "Add new feature"
@@ -217,20 +178,34 @@ git push origin feature-name
 
 Open a Pull Request 🚀
 
-👤 Author
+---
 
-Name: Sai Nikith
-Role: AI/ML & Signal Processing Developer
+## 👤 Author
+
+Sai Nikith
+AI/ML & Signal Processing Developer
 GitHub: https://github.com/sainikith07
 
-⭐ Support
+---
 
-If you found this project useful:
+## ⭐ Support
 
-Please Star ⭐ this repository
+If you found this project useful,
+please Star ⭐ the repository — it motivates continued development!
 
-It motivates continued development!
+---
 
-🏁 License
+## 🏁 License
 
 This project is licensed under the MIT License.
+
+
+---
+---
+If you want next:
+- 🎤 **Interview explanation**
+- 📄 **Resume project points**
+- ☁️ **Streamlit Cloud deployment steps**
+- 🔥 **LinkedIn post**
+
+
