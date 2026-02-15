@@ -1,91 +1,94 @@
 import streamlit as st
 import numpy as np
+import librosa
+import soundfile as sf
+import matplotlib.pyplot as plt
 import json
 from datetime import datetime
 from fpdf import FPDF
-import random
 
 st.set_page_config(page_title="InstruNet", layout="centered")
 
-st.title("🎶 InstruNet - Instrument Analyzer")
+st.title("🎶 InstruNet - Audio Analyzer")
 st.write("Upload a WAV file and click Analyze Track.")
 
+# ---------------------------------------
+# Upload Section
+# ---------------------------------------
 uploaded_file = st.file_uploader("Upload WAV File", type=["wav"])
-
-label_map = ["Flute", "Trumpet", "Violin"]
 
 if uploaded_file:
     st.audio(uploaded_file)
 
     if st.button("🔍 Analyze Track"):
 
-        # Simulated prediction (deployment safe)
-        pred_label = random.choice(label_map)
-        confidence_score = round(random.uniform(0.5, 0.95), 2)
+        # Load audio
+        audio, sr = sf.read(uploaded_file)
+
+        # Convert stereo to mono
+        if len(audio.shape) > 1:
+            audio = np.mean(audio, axis=1)
+
+        # Generate Mel Spectrogram
+        mel = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=128)
+        mel_db = librosa.power_to_db(mel, ref=np.max)
 
         st.divider()
 
-        # Final Prediction
-        st.subheader("🎼 Final Prediction")
-        st.success(pred_label)
+        # ---------------------------------------
+        # Display Mel Spectrogram
+        # ---------------------------------------
+        st.subheader("📊 Mel-Spectrogram")
 
-        # Instrument Condition
-        st.subheader("🎚 Instrument Condition")
+        fig, ax = plt.subplots(figsize=(8,4))
+        img = ax.imshow(mel_db, aspect='auto', origin='lower', cmap='magma')
+        ax.set_title("Mel Spectrogram")
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Mel Frequency")
+        fig.colorbar(img, ax=ax)
+        st.pyplot(fig)
 
-        if confidence_score > 0.75:
-            condition = "Strong Presence"
-            st.success(condition)
-        elif confidence_score > 0.40:
-            condition = "Moderate Presence"
-            st.warning(condition)
-        else:
-            condition = "Weak Presence"
-            st.error(condition)
-
-        # Audio Timeline (Simulated)
-        st.subheader("📈 Audio Timeline")
-
-        timeline = np.sin(np.linspace(0, 3*np.pi, 200)) * confidence_score + confidence_score
-        st.line_chart(timeline)
-
-        # Audio Representation (Simulated waveform)
-        st.subheader("🎵 Audio Representation")
-
-        waveform = np.sin(np.linspace(0, 20*np.pi, 500))
-        st.line_chart(waveform)
-
+        # ---------------------------------------
         # JSON Report
+        # ---------------------------------------
         report = {
-            "file": uploaded_file.name,
-            "prediction": pred_label,
-            "condition": condition,
-            "confidence_score": confidence_score,
+            "file_name": uploaded_file.name,
+            "sample_rate": sr,
+            "duration_seconds": round(len(audio)/sr, 2),
+            "mel_shape": mel_db.shape,
             "timestamp": str(datetime.now())
         }
 
+        st.subheader("📄 JSON Report")
+
         st.download_button(
-            "Download JSON Report",
+            label="Download JSON Report",
             data=json.dumps(report, indent=4),
-            file_name="instrument_report.json",
+            file_name="mel_analysis_report.json",
             mime="application/json"
         )
 
+        # ---------------------------------------
         # PDF Report
+        # ---------------------------------------
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
-        pdf.cell(200,10,"InstruNet Instrument Report", ln=True)
-        pdf.cell(200,10,f"Prediction: {pred_label}", ln=True)
-        pdf.cell(200,10,f"Condition: {condition}", ln=True)
-        pdf.cell(200,10,f"Confidence: {confidence_score}", ln=True)
+
+        pdf.cell(200,10,"InstruNet - Mel Spectrogram Report", ln=True)
+        pdf.ln(5)
+        pdf.cell(200,10,f"File: {uploaded_file.name}", ln=True)
+        pdf.cell(200,10,f"Sample Rate: {sr}", ln=True)
+        pdf.cell(200,10,f"Duration (s): {round(len(audio)/sr,2)}", ln=True)
+        pdf.cell(200,10,f"Mel Shape: {mel_db.shape}", ln=True)
         pdf.cell(200,10,f"Timestamp: {datetime.now()}", ln=True)
 
-        pdf.output("report.pdf")
+        pdf.output("mel_report.pdf")
 
-        with open("report.pdf", "rb") as f:
+        with open("mel_report.pdf", "rb") as f:
             st.download_button(
-                "Download PDF Report",
+                label="Download PDF Report",
                 data=f,
-                file_name="instrument_report.pdf",
+                file_name="mel_analysis_report.pdf",
                 mime="application/pdf"
             )
