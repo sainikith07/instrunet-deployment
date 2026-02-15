@@ -7,7 +7,9 @@ import json
 from datetime import datetime
 from fpdf import FPDF
 
-# Load TFLite model
+# -----------------------------------
+# Load TFLite Model
+# -----------------------------------
 interpreter = tf.lite.Interpreter(model_path="instruNet_model.tflite")
 interpreter.allocate_tensors()
 
@@ -16,35 +18,47 @@ output_details = interpreter.get_output_details()
 
 label_map = ["flute", "trumpet", "violin"]
 
+# -----------------------------------
+# Prediction Function
+# -----------------------------------
 def predict_instrument(audio_file):
     audio, sr = sf.read(audio_file)
 
-    # Convert stereo to mono if needed
+    # Convert stereo to mono
     if len(audio.shape) > 1:
         audio = np.mean(audio, axis=1)
 
+    # Resample
     audio = librosa.resample(audio, orig_sr=sr, target_sr=22050)
-    audio = audio[:22050*3] if len(audio) > 22050*3 else np.pad(audio, (0, max(0, 22050*3 - len(audio))))
 
+    # Fix length to 3 seconds
+    max_len = 22050 * 3
+    if len(audio) > max_len:
+        audio = audio[:max_len]
+    else:
+        audio = np.pad(audio, (0, max_len - len(audio)))
+
+    # Generate Mel Spectrogram
     mel = librosa.feature.melspectrogram(y=audio, sr=22050, n_mels=128)
     mel_db = librosa.power_to_db(mel, ref=np.max)
-    mel_db = np.resize(mel_db, (128, 128))
-    mel_db = mel_db.astype(np.float32)
-    mel_db = mel_db.reshape(1, 128, 128, 1)
 
-    interpreter.set_tensor(input_details[0]['index'], mel_db)
+    # Resize for model input
+    mel_resized = np.resize(mel_db, (128, 128)).astype(np.float32)
+    mel_input = mel_resized.reshape(1, 128, 128, 1)
+
+    # Run inference
+    interpreter.set_tensor(input_details[0]['index'], mel_input)
     interpreter.invoke()
     output = interpreter.get_tensor(output_details[0]['index'])[0]
 
     pred_idx = np.argmax(output)
     confidence = float(output[pred_idx])
 
-    return label_map[pred_idx], confidence, mel_db[0, :, :, 0]
+    return label_map[pred_idx], confidence, mel_resized
 
-# ---------------------------------------
+# -----------------------------------
 # UI
-# ---------------------------------------
-
+# -----------------------------------
 st.title("🎶 InstruNet - Instrument Recognition System")
 st.write("Upload a `.wav` file and click Analyze Track.")
 
@@ -70,7 +84,16 @@ if uploaded_file:
         # Mel Spectrogram Display
         # ---------------------------
         st.subheader("📊 Mel-Spectrogram")
-        st.image(mel_image, caption="Mel-Spectrogram", use_column_width=True)
+
+        # Normalize image for Streamlit
+        mel_image_norm = (mel_image - mel_image.min()) / (mel_image.max() - mel_image.min())
+
+        st.image(
+            mel_image_norm,
+            caption="Mel-Spectrogram",
+            use_column_width=True,
+            clamp=True
+        )
 
         # ---------------------------
         # JSON Report
