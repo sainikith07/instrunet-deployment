@@ -8,30 +8,30 @@ import matplotlib.pyplot as plt
 import json
 from fpdf import FPDF
 from datetime import datetime
+import os
 
-# --------------------------------
-# Page Config
-# --------------------------------
+# -----------------------------
+# PAGE CONFIG
+# -----------------------------
 st.set_page_config(page_title="InstruNet AI", layout="wide")
 
-# --------------------------------
-# Dark Dashboard Styling
-# --------------------------------
+# -----------------------------
+# DARK THEME STYLING
+# -----------------------------
 st.markdown("""
 <style>
-body {background-color: #0E1117;}
-.big-font {font-size:28px !important; font-weight: bold;}
-.section-box {
-    background-color:#1E222A;
-    padding:20px;
-    border-radius:15px;
+body {
+    background-color: #0E1117;
+}
+h1, h2, h3, h4 {
+    color: white;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------------------
-# Load TFLite Model
-# --------------------------------
+# -----------------------------
+# LOAD TFLITE MODEL
+# -----------------------------
 interpreter = tf.lite.Interpreter(model_path="instruNet_model.tflite")
 interpreter.allocate_tensors()
 
@@ -40,9 +40,9 @@ output_details = interpreter.get_output_details()
 
 label_map = ["Flute", "Trumpet", "Violin"]
 
-# --------------------------------
-# Prediction Function
-# --------------------------------
+# -----------------------------
+# PREDICTION FUNCTION
+# -----------------------------
 def predict_instrument(audio_file):
     audio, sr = sf.read(audio_file)
 
@@ -50,12 +50,18 @@ def predict_instrument(audio_file):
         audio = np.mean(audio, axis=1)
 
     audio = librosa.resample(audio, orig_sr=sr, target_sr=22050)
-    audio = audio[:22050*3] if len(audio) > 22050*3 else np.pad(audio, (0, max(0, 22050*3 - len(audio))))
+
+    max_len = 22050 * 3
+    if len(audio) > max_len:
+        audio = audio[:max_len]
+    else:
+        audio = np.pad(audio, (0, max_len - len(audio)))
 
     mel = librosa.feature.melspectrogram(y=audio, sr=22050, n_mels=128)
     mel_db = librosa.power_to_db(mel, ref=np.max)
-    mel_db = np.resize(mel_db, (128,128)).astype(np.float32)
-    mel_db = mel_db.reshape(1,128,128,1)
+
+    mel_db = np.resize(mel_db, (128, 128)).astype(np.float32)
+    mel_db = mel_db.reshape(1, 128, 128, 1)
 
     interpreter.set_tensor(input_details[0]['index'], mel_db)
     interpreter.invoke()
@@ -63,67 +69,70 @@ def predict_instrument(audio_file):
 
     return output, audio, 22050
 
-# --------------------------------
-# Header
-# --------------------------------
-st.markdown("## 🎶 InstruNet AI: Music Instrument Recognition")
-st.markdown("Upload. Analyze. Discover.")
-
+# -----------------------------
+# HEADER
+# -----------------------------
+st.markdown("# 🎶 InstruNet - Instrument Recognition System")
+st.markdown("Upload a WAV file to classify the instrument.")
 st.divider()
 
-# --------------------------------
-# Layout (3 Column Dashboard)
-# --------------------------------
+# -----------------------------
+# DASHBOARD LAYOUT
+# -----------------------------
 left, center, right = st.columns([1,2,1])
 
 # -----------------------------
-# LEFT PANEL (Upload)
+# LEFT PANEL - Upload
 # -----------------------------
 with left:
-    st.markdown("### 📤 Upload Audio")
-    uploaded_file = st.file_uploader("Choose WAV File", type=["wav"])
+    st.subheader("Upload Audio")
+    uploaded_file = st.file_uploader("Choose WAV file", type=["wav"])
 
     if uploaded_file:
         st.audio(uploaded_file, format="audio/wav")
         st.success("Now Playing")
 
 # -----------------------------
-# CENTER PANEL (Analysis)
+# PROCESS AFTER UPLOAD
 # -----------------------------
 if uploaded_file:
+
     confidences, audio, sr = predict_instrument(uploaded_file)
     pred_idx = np.argmax(confidences)
     pred_label = label_map[pred_idx]
 
+    # -------------------------
+    # CENTER PANEL - Analysis
+    # -------------------------
     with center:
-        st.markdown("### 📊 Analysis Results")
+        st.subheader("Analysis Results")
 
         # Spectrogram
         mel = librosa.feature.melspectrogram(y=audio, sr=sr)
         mel_db = librosa.power_to_db(mel, ref=np.max)
 
-        fig, ax = plt.subplots(figsize=(7,3))
-        librosa.display.specshow(mel_db, sr=sr, cmap="magma", ax=ax)
-        ax.set_title("Mel-Spectrogram")
-        st.pyplot(fig)
+        fig1, ax1 = plt.subplots(figsize=(7,3))
+        librosa.display.specshow(mel_db, sr=sr, cmap="magma", ax=ax1)
+        ax1.set_title("Mel Spectrogram")
+        st.pyplot(fig1)
 
         # Confidence Bars
-        st.markdown("### 🎚 Instrument Confidence")
+        st.subheader("Instrument Confidence")
         for i, label in enumerate(label_map):
-            st.write(f"{label}")
+            st.write(label)
             st.progress(float(confidences[i]))
 
-# -----------------------------
-# RIGHT PANEL (Detected + Timeline)
-# -----------------------------
+    # -------------------------
+    # RIGHT PANEL - Detection
+    # -------------------------
     with right:
-        st.markdown("### 🎼 Detected Instruments")
+        st.subheader("Detected Instruments")
 
         for i, label in enumerate(label_map):
             status = "Present" if confidences[i] > 0.3 else "Not Present"
             st.write(f"{label}: {status}")
 
-        st.markdown("### 📈 Instrument Timeline")
+        st.subheader("Instrument Timeline")
 
         timeline = np.sin(np.linspace(0, 3*np.pi, 200)) * confidences[pred_idx] + confidences[pred_idx]
         fig2, ax2 = plt.subplots(figsize=(4,2))
@@ -132,11 +141,11 @@ if uploaded_file:
         ax2.set_title("Intensity Over Time")
         st.pyplot(fig2)
 
-# --------------------------------
-# EXPORT SECTION (Bottom)
-# --------------------------------
+    # -------------------------
+    # EXPORT SECTION
+    # -------------------------
     st.divider()
-    st.markdown("### 📥 Export Report")
+    st.subheader("Export Report")
 
     report = {
         "audio_file": uploaded_file.name,
@@ -147,30 +156,33 @@ if uploaded_file:
         "timestamp": str(datetime.now())
     }
 
-    # JSON
+    # JSON EXPORT
     st.download_button(
-        "Download JSON Report",
-        json.dumps hooking(report, indent=4),
-        file_name="instrument_report.json"
+        label="Download JSON Report",
+        data=json.dumps(report, indent=4),
+        file_name="instrument_report.json",
+        mime="application/json"
     )
 
-    # PDF
+    # PDF EXPORT
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=14)
-    pdf.cell(200,10,"InstruNet AI Report", ln=True, align='C')
+    pdf.cell(200,10,"InstruNet AI - Instrument Report", ln=True, align='C')
     pdf.ln(10)
     pdf.set_font("Arial", size=12)
+
     pdf.cell(200,10,f"Prediction: {pred_label}", ln=True)
 
-    for i,label in enumerate(label_map):
+    for i, label in enumerate(label_map):
         pdf.cell(200,10,f"{label}: {confidences[i]*100:.2f}%", ln=True)
 
     pdf.output("report.pdf")
 
-    with open("report.pdf","rb") as f:
+    with open("report.pdf", "rb") as f:
         st.download_button(
-            "Download PDF Report",
-            f,
-            file_name="instrument_report.pdf"
+            label="Download PDF Report",
+            data=f,
+            file_name="instrument_report.pdf",
+            mime="application/pdf"
         )
